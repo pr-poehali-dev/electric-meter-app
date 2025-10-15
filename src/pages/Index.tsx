@@ -106,6 +106,58 @@ const Index = () => {
     }
   };
 
+  const handleUpdateReading = async (id: string, newReading: number, newMeterNumber: string) => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id,
+          meterNumber: newMeterNumber,
+          reading: newReading,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update');
+      }
+
+      const data = await response.json();
+      
+      setReadings((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                meterNumber: data.reading.meterNumber,
+                reading: data.reading.reading,
+              }
+            : r
+        )
+      );
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleDeleteReading = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete');
+      }
+
+      setReadings((prev) => prev.filter((r) => r.id !== id));
+    } catch (error) {
+      throw error;
+    }
+  };
+
   const handleExportToExcel = () => {
     const csvContent = [
       ['Дата', 'Время', 'Номер счётчика', 'Показания (кВт·ч)'],
@@ -202,7 +254,11 @@ const Index = () => {
                   Экспорт в Excel
                 </Button>
               </div>
-              <ReadingsTable readings={readings} />
+              <ReadingsTable 
+                readings={readings}
+                onUpdateReading={handleUpdateReading}
+                onDeleteReading={handleDeleteReading}
+              />
             </Card>
           </TabsContent>
 

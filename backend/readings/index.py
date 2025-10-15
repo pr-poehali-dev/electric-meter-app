@@ -25,7 +25,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
                 'Access-Control-Max-Age': '86400'
             },
@@ -112,6 +112,58 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 201,
                 'headers': headers,
                 'body': json.dumps({'reading': new_reading}),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'PUT':
+            body_data = json.loads(event.get('body', '{}'))
+            
+            reading_id = body_data.get('id')
+            meter_number = body_data.get('meterNumber')
+            reading = body_data.get('reading')
+            
+            if not reading_id or not meter_number or reading is None:
+                return {
+                    'statusCode': 400,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'id, meterNumber and reading are required'}),
+                    'isBase64Encoded': False
+                }
+            
+            cursor.execute(
+                "UPDATE t_p51427126_electric_meter_app.readings SET meter_number = %s, reading = %s WHERE id = %s RETURNING id, meter_number, reading, photo_url, created_at",
+                (meter_number, reading, reading_id)
+            )
+            
+            result = cursor.fetchone()
+            
+            if not result:
+                cursor.close()
+                conn.close()
+                return {
+                    'statusCode': 404,
+                    'headers': headers,
+                    'body': json.dumps({'error': 'Reading not found'}),
+                    'isBase64Encoded': False
+                }
+            
+            conn.commit()
+            
+            updated_reading = {
+                'id': str(result['id']),
+                'meterNumber': result['meter_number'],
+                'reading': result['reading'],
+                'photoUrl': result['photo_url'],
+                'timestamp': result['created_at'].isoformat()
+            }
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                'statusCode': 200,
+                'headers': headers,
+                'body': json.dumps({'reading': updated_reading}),
                 'isBase64Encoded': False
             }
         
