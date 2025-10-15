@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+
+const OCR_API_URL = 'https://functions.poehali.dev/c4430878-801d-4956-89f4-3b7d77a37ce7';
 
 interface UploadSectionProps {
   onNewReading: (reading: { meterNumber: string; reading: number; photo?: string }) => void;
@@ -29,30 +30,80 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
     }
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    
+    reader.onload = async () => {
+      const imageBase64 = reader.result as string;
+      setPreviewUrl(imageBase64);
+      setIsProcessing(true);
 
-    setIsProcessing(true);
+      try {
+        const response = await fetch(OCR_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image: imageBase64,
+          }),
+        });
 
-    setTimeout(() => {
-      const mockMeterNumber = `EM-2024-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
-      const mockReading = Math.floor(10000 + Math.random() * 90000);
+        if (!response.ok) {
+          const errorData = await response.json();
+          
+          if (errorData.error === 'OPENAI_API_KEY not configured') {
+            toast({
+              title: 'API ключ не настроен',
+              description: 'Добавьте OPENAI_API_KEY в настройки проекта',
+              variant: 'destructive',
+            });
+          } else {
+            throw new Error(errorData.error || 'OCR failed');
+          }
+          
+          setIsProcessing(false);
+          setPreviewUrl(null);
+          if (e.target) {
+            e.target.value = '';
+          }
+          return;
+        }
 
-      onNewReading({
-        meterNumber: mockMeterNumber,
-        reading: mockReading,
-        photo: reader.result as string,
-      });
+        const data = await response.json();
 
-      setIsProcessing(false);
-      setPreviewUrl(null);
-      
-      if (e.target) {
-        e.target.value = '';
+        onNewReading({
+          meterNumber: data.meterNumber,
+          reading: data.reading,
+          photo: imageBase64,
+        });
+
+        toast({
+          title: 'Распознавание успешно',
+          description: `Счётчик: ${data.meterNumber}, Показания: ${data.reading} кВт·ч`,
+        });
+
+        setIsProcessing(false);
+        setPreviewUrl(null);
+        
+        if (e.target) {
+          e.target.value = '';
+        }
+      } catch (error) {
+        toast({
+          title: 'Ошибка распознавания',
+          description: error instanceof Error ? error.message : 'Не удалось распознать показания',
+          variant: 'destructive',
+        });
+        
+        setIsProcessing(false);
+        setPreviewUrl(null);
+        
+        if (e.target) {
+          e.target.value = '';
+        }
       }
-    }, 2000);
+    };
+
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -65,7 +116,7 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
               Загрузка фото счётчика
             </h2>
             <p className="text-muted-foreground">
-              ИИ автоматически распознает номер и показания счётчика
+              ИИ автоматически распознает номер из QR-кода и показания счётчика
             </p>
           </div>
 
@@ -103,7 +154,7 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
               <div className="flex items-center justify-center gap-3 p-4 bg-primary/10 rounded-lg animate-pulse">
                 <Icon name="Loader2" size={20} className="animate-spin text-primary" />
                 <span className="text-sm font-medium text-primary">
-                  Распознавание показаний...
+                  AI распознаёт показания...
                 </span>
               </div>
             )}
@@ -117,7 +168,11 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
             <ul className="text-sm space-y-1 text-cyan-800">
               <li className="flex items-start gap-2">
                 <Icon name="Check" size={16} className="mt-0.5 flex-shrink-0" />
-                Убедитесь, что цифры чёткие и хорошо видны
+                Убедитесь, что цифры счётчика чёткие и хорошо видны
+              </li>
+              <li className="flex items-start gap-2">
+                <Icon name="Check" size={16} className="mt-0.5 flex-shrink-0" />
+                QR-код или наклейка с номером должны быть в кадре
               </li>
               <li className="flex items-start gap-2">
                 <Icon name="Check" size={16} className="mt-0.5 flex-shrink-0" />
@@ -144,6 +199,7 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
             <div className="text-center text-muted-foreground space-y-3">
               <Icon name="Image" size={64} className="mx-auto opacity-30" />
               <p className="text-sm">Предпросмотр фото</p>
+              <p className="text-xs">Загрузите фото счётчика с QR-кодом</p>
             </div>
           )}
         </div>
