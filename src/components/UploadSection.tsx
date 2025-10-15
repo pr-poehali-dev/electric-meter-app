@@ -14,6 +14,9 @@ interface UploadSectionProps {
 const UploadSection = ({ onNewReading }: UploadSectionProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualMeterNumber, setManualMeterNumber] = useState('');
+  const [manualReading, setManualReading] = useState('');
   const { toast } = useToast();
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,9 +109,100 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
     reader.readAsDataURL(file);
   };
 
+  const handleManualSubmit = () => {
+    if (!manualMeterNumber || !manualReading) {
+      toast({
+        title: 'Заполните все поля',
+        description: 'Укажите номер счётчика и показания',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reading = parseInt(manualReading);
+    if (isNaN(reading) || reading < 0) {
+      toast({
+        title: 'Неверные показания',
+        description: 'Показания должны быть положительным числом',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    onNewReading({
+      meterNumber: manualMeterNumber,
+      reading: reading,
+    });
+
+    toast({
+      title: 'Показания добавлены',
+      description: `Счётчик: ${manualMeterNumber}, Показания: ${reading} кВт·ч`,
+    });
+
+    setManualMeterNumber('');
+    setManualReading('');
+    setShowManualInput(false);
+  };
+
   return (
     <Card className="p-8 shadow-lg border-0 bg-white">
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => setShowManualInput(!showManualInput)}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+        >
+          <Icon name={showManualInput ? "Camera" : "Edit3"} size={18} />
+          {showManualInput ? 'Загрузить фото' : 'Ввести вручную'}
+        </button>
+      </div>
+
+      {showManualInput ? (
+        <div className="space-y-6 max-w-md mx-auto">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+              <Icon name="Edit3" size={24} className="text-primary" />
+              Ручной ввод показаний
+            </h2>
+            <p className="text-muted-foreground">
+              Введите данные со счётчика вручную
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="manual-meter">Номер счётчика</Label>
+              <Input
+                id="manual-meter"
+                placeholder="Например: AM051V"
+                value={manualMeterNumber}
+                onChange={(e) => setManualMeterNumber(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="manual-reading">Показания (кВт·ч)</Label>
+              <Input
+                id="manual-reading"
+                type="number"
+                placeholder="Например: 4451"
+                value={manualReading}
+                onChange={(e) => setManualReading(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+
+            <button
+              onClick={handleManualSubmit}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Icon name="Plus" size={20} />
+              Добавить показания
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
@@ -204,6 +298,7 @@ const UploadSection = ({ onNewReading }: UploadSectionProps) => {
           )}
         </div>
       </div>
+      )}
     </Card>
   );
 };
