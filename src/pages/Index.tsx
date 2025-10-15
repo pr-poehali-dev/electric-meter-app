@@ -116,7 +116,7 @@ const Index = () => {
         r.reading.toString(),
       ]),
     ]
-      .map((row) => row.join(','))
+      .map((row) => row.join(';'))
       .join('\n');
 
     const blob = new Blob(['\uFEFF' + csvContent], {
