@@ -10,6 +10,7 @@ import StatisticsChart from '@/components/StatisticsChart';
 import SettingsSection from '@/components/SettingsSection';
 
 const API_URL = 'https://functions.poehali.dev/be62b850-1027-4724-a8a3-6d8564579b51';
+const TELEGRAM_API_URL = 'https://functions.poehali.dev/a3829aea-cf5c-42bc-8eae-bb965ce79f82';
 
 export interface Reading {
   id: string;
@@ -92,10 +93,26 @@ const Index = () => {
       });
 
       if (telegramSettings.enabled && telegramSettings.chatId) {
-        toast({
-          title: 'Telegram уведомление',
-          description: 'Уведомление отправлено в Telegram',
-        });
+        try {
+          await fetch(TELEGRAM_API_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              chatId: telegramSettings.chatId,
+              meterNumber: reading.meterNumber,
+              reading: reading.reading,
+            }),
+          });
+          
+          toast({
+            title: 'Telegram уведомление',
+            description: 'Уведомление отправлено в Telegram',
+          });
+        } catch (error) {
+          console.error('Telegram notification failed:', error);
+        }
       }
     } catch (error) {
       toast({

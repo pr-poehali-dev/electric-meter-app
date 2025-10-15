@@ -47,7 +47,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user_id = query_params.get('userId', 'default_user')
             
             cursor.execute(
-                "SELECT id, meter_number, reading, photo_url, created_at FROM t_p51427126_electric_meter_app.readings WHERE user_id = %s ORDER BY created_at DESC",
+                "SELECT id, meter_number, reading, photo_url, created_at FROM readings WHERE user_id = %s ORDER BY created_at DESC",
                 (user_id,)
             )
             
@@ -90,7 +90,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cursor.execute(
-                "INSERT INTO t_p51427126_electric_meter_app.readings (meter_number, reading, photo_url, user_id) VALUES (%s, %s, %s, %s) RETURNING id, created_at",
+                "INSERT INTO readings (meter_number, reading, photo_url, user_id) VALUES (%s, %s, %s, %s) RETURNING id, created_at",
                 (meter_number, reading, photo_url, user_id)
             )
             
@@ -131,7 +131,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cursor.execute(
-                "UPDATE t_p51427126_electric_meter_app.readings SET meter_number = %s, reading = %s WHERE id = %s RETURNING id, meter_number, reading, photo_url, created_at",
+                "UPDATE readings SET meter_number = %s, reading = %s WHERE id = %s RETURNING id, meter_number, reading, photo_url, created_at",
                 (meter_number, reading, reading_id)
             )
             
@@ -180,7 +180,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             cursor.execute(
-                "DELETE FROM t_p51427126_electric_meter_app.readings WHERE id = %s",
+                "DELETE FROM readings WHERE id = %s",
                 (reading_id,)
             )
             
