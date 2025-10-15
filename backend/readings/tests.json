@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Get readings list",
+      "method": "GET",
+      "path": "/?userId=test_user",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "readings": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create new reading",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "meterNumber": "TEST-001",
+        "reading": 15000,
+        "userId": "test_user"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "reading": {
+          "meterNumber": "TEST-001",
+          "reading": 15000
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
