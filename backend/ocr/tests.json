@@ -1,17 +1,21 @@
 {
   "tests": [
     {
-      "name": "OCR recognition test",
+      "name": "OCR missing image test",
       "method": "POST",
       "path": "/",
-      "body": {
-        "image": "data:image/jpeg;base64,/9j/4AAQSkZJRg=="
-      },
-      "expectedStatus": 200,
+      "body": {},
+      "expectedStatus": 400,
       "expectedBody": {
-        "meterNumber": "string"
+        "error": "image is required"
       },
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "OPTIONS CORS test",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
     }
   ]
 }
